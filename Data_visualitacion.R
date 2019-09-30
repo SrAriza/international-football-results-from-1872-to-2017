@@ -86,5 +86,32 @@ ReadyData %>%
 AllCountries %>% 
   left_join(y = AwayTeam, by = "away_team") -> HomeAndAway
 
+#Visualitacion of goals scored over the years by continent:
+HomeAndAway
+ggplot(Data, aes(x = date, y = TotalGoals, col = MajorTournament)) + geom_bar()
 
 
+#Checking for who won:
+#Creating a different data set for home win, draw and away win.
+HomeAndAway %>% 
+  filter(GoalsDifference >0) -> HomeWin
+
+HomeAndAway %>% 
+  filter(GoalsDifference ==0) -> Draw
+
+HomeAndAway %>% 
+  filter(GoalsDifference <0) -> AwayWin
+
+#Creating a new variable called result where it would reflect what was the score of the match
+mutate(HomeWin, result = "H") ->HomeWin
+
+mutate(AwayWin, result = "A") ->AwayWin
+
+mutate(Draw, result = "D") ->Draw
+
+#Putting together all the results with the diffent outcomes
+bind_rows(HomeWin, AwayWin, Draw)->Results
+
+#Reordering the results so they are ordered by date.
+ResultsOrder <- order(Results$date)
+WorldCup <- Results[ResultsOrder,]
