@@ -5,12 +5,10 @@
 
 
 #----Libraries----#
-library(dplyr)
-library(ggplot2)
+
 library(e1071)
-library(tidyr)
-library(readr)
 library(tidyverse)
+library(lubridate)
 
 #----Loading the data----#
 Data <- read.csv("results.csv")
@@ -115,3 +113,51 @@ bind_rows(HomeWin, AwayWin, Draw)->Results
 #Reordering the results so they are ordered by date.
 ResultsOrder <- order(Results$date)
 WorldCup <- Results[ResultsOrder,]
+
+
+
+#Checking the outcome when american teams play european at home at the world cup
+WorldCup %>% 
+  filter(region == "Americas") %>% 
+  filter(region2 == "Europe") -> AmericaHome
+
+
+ggplot(AmericaHome, aes(x = result))+ geom_bar(aes(fill= result))
+
+#Checking the outcome when european teams play american teams at home at the world cup
+WorldCup %>% 
+  filter(region == "Europe") %>% 
+  filter(region2 == "Americas") -> EuropeHome
+
+
+ggplot(EuropeHome, aes(x = result))+ geom_bar(aes(fill= result))
+
+
+EuropeHome %>% 
+  group_by(date, "year" ) %>% 
+  group_by(result) -> test
+
+ggplot(EuropeHome, aes(x = date, y = result))+ geom_line()
+
+
+
+EuropeHome$date <- as.POSIXct(EuropeHome$date, "%Y/%m/%d")
+
+EuropeHome$year <- year(EuropeHome$date)
+
+#Creating a ggplot for the results between europe and south america in the world cup
+WorldCup$date <- as.POSIXct(WorldCup$date, "%Y/%m/%d")
+
+WorldCup$year <- year(WorldCup$date)
+
+EurAmer <- c("Europe", "Americas")
+
+WorldCup %>% 
+  group_by(year) %>% 
+  filter(region == EurAmer) -> WorldCup1
+
+WorldCup1$result <- as.factor(WorldCup1$result)
+
+WorldCup1 %>% 
+  summarise(frequency= n() )) %>% 
+  ggplot(aes(x = year , y = AllResults )) + geom_line()
