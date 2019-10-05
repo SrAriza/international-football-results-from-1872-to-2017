@@ -150,14 +150,68 @@ WorldCup$date <- as.POSIXct(WorldCup$date, "%Y/%m/%d")
 
 WorldCup$year <- year(WorldCup$date)
 
-EurAmer <- c("Europe", "Americas")
 
+#Creating a dataset with only world cup games
 WorldCup %>% 
-  group_by(year) %>% 
-  filter(region == EurAmer) -> WorldCup1
+  filter(tournament == "FIFA World Cup") -> WorldCup1
 
-WorldCup1$result <- as.factor(WorldCup1$result)
-
+#Creating a dataset only with the 2018 world cup
 WorldCup1 %>% 
-  summarise(frequency= n() )) %>% 
-  ggplot(aes(x = year , y = AllResults )) + geom_line()
+  filter(year == 2018) %>% 
+  arrange(desc(date)) -> WorldCup2018
+
+#Creating an id for all the games
+id <- c(1:64)
+
+WorldCup2018$id <- id
+
+WorldCup2018$id <- as.numeric(WorldCup2018$id)
+
+semifinal <- c(3,4)
+quarterfinal <- c(5:8)
+roundof16 <- c(9:16)
+GroupStage <- c(17:64)
+
+for(i in 1:nrow(WorldCup2018)){
+  if(WorldCup2018$id[i] == 1){
+    WorldCup2018$Phase[i] <- "Final"
+  }else if (WorldCup2018$id[i] == 2){
+    WorldCup2018$Phase[i] <- "3rd4thplace"
+  }else if (WorldCup2018$id[i] %in% semifinal ){
+    WorldCup2018$Phase[i] <- "Semifinal"
+  }else if (WorldCup2018$id[i] %in% quarterfinal){
+    WorldCup2018$Phase[i] <- "Quarterfinal"
+  }else if (WorldCup2018$id[i] %in% roundof16){
+    WorldCup2018$Phase[i] <- "RoundOf16"
+    }else if (WorldCup2018$id[i] %in% GroupStage){
+      WorldCup2018$Phase[i] <- "GroupStage"
+    }
+}
+
+      
+#Creating a new dataset with only the world cups with 32 teams
+WorldCup1 %>% 
+  filter(year > 1997) %>% 
+  arrange(desc(date)) -> worldcup32teams 
+
+
+worldcup32teams$id <- id
+
+#Adding the world cup phase 
+for(i in 1:nrow(worldcup32teams)){
+  if(worldcup32teams$id[i] == 1){
+    worldcup32teams$Phase[i] <- "Final"
+  }else if (worldcup32teams$id[i] == 2){
+    worldcup32teams$Phase[i] <- "3rd4thplace"
+  }else if (worldcup32teams$id[i] %in% semifinal ){
+    worldcup32teams$Phase[i] <- "Semifinal"
+  }else if (worldcup32teams$id[i] %in% quarterfinal){
+    worldcup32teams$Phase[i] <- "Quarterfinal"
+  }else if (worldcup32teams$id[i] %in% roundof16){
+    worldcup32teams$Phase[i] <- "RoundOf16"
+  }else if (worldcup32teams$id[i] %in% GroupStage){
+    worldcup32teams$Phase[i] <- "GroupStage"
+  }
+}
+
+
