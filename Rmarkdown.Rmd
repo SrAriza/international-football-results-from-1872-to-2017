@@ -1,0 +1,189 @@
+---
+title: "International football results from 1872 to 2019"
+author: "Julian Ariza"
+date: "26/9/2019"
+output:   
+  html_document:
+    toc: true
+    toc_float: true
+    df_print: paged
+    code_folding: hide
+---
+# Analysis of the International football results
+## Comparison between American and European teams
+
+### Libraries
+>e1071
+
+>tidyverse
+
+```{r, include=FALSE}
+library(e1071)
+library(tidyverse)
+```
+
+### Loading the datasets
+
+>This dataset includes all the international football results from 1872 till 2019
+
+```{r, warning=FALSE}
+
+Data <- read_csv("results.csv")
+
+```
+
+
+>This dataset includes all the countries in the world. It is need to be able to include region in the other dataset.
+
+```{r, warning=FALSE}
+Countries <- read_csv("countries.csv")
+
+```
+
+### -First analysis
+
+> Checking the data 
+
+```{r}
+summary(Data)
+```
+>In this first summary, we can already start to see some important points, for example the teams leading the most home and away games or the city or countrt where most games have taken place.
+
+
+#### Ideas from first analysis
+
+>After the first data exploration, creating a new variable for more important tournaments will be very useful as there is currently over 150 torunaments.
+
+```{r}
+
+
+#According what we want to analyse in the future, we pick the tournaments that are the most relevant
+
+# define relevant tournaments
+rel_tour <- c("Copa AmÃ©rica","FIFA World Cup qualification", "FIFA World Cup",
+              "UEFA Euro", "UEFA Euro qualification", "FIFA World Cup","Copa AmÃ©rica qualification")
+
+#Making a new variable for major tournaments
+Data %>% 
+  mutate(MajorTournament = if_else(tournament %in% rel_tour, "True", "False")) -> Data
+
+Data$MajorTournament <-  as.factor(Data$MajorTournament)
+
+```
+
+
+>To reduce the amount of variables, we decide to create our own dataset with just the tournaments we selected earlier
+
+
+```{r}
+#New dataset only for major tournaments
+Data %>% 
+  filter(MajorTournament == "True" ) -> MajorTournaments
+```
+
+
+
+> Next we will create a new variable to know what the region of the home and away country are.
+
+```{r warning=FALSE}
+#Adding the continent to the dataset
+
+
+#loading the errors data(this is after doing it the first time and finding out the errors, the code is found later on)
+errors <- read_csv2("errors (2).csv")
+
+#Creating the dataset only with country name and region
+Countries %>% 
+  select(home_team = name, region) -> SelectedCountries
+
+#adding the countries with different names or errors encountered
+ReadyData <- bind_rows(SelectedCountries, errors)
+
+#Joining the dataset to add region to the dataset
+MajorTournaments %>% 
+  left_join(y = ReadyData, by = "home_team") -> AllCountries
+
+#How i found the errors the first time
+AllCountries %>% 
+  filter(is.na(region)) %>% 
+  distinct(home_team) -> errors
+
+#saving the errors to be able to fix them in excel, as is the easiest and quickest way.
+#write.csv(errors, file = "errors.csv")
+
+#Checking with the new dataset for errors
+
+AllCountries %>% 
+  filter(is.na(region)) %>% 
+  distinct(home_team)
+
+
+#Creating a region for away team
+ReadyData %>% 
+  rename( away_team = home_team, region2= region) -> AwayTeam
+
+#Creating a dataset with regions for home and away team
+AllCountries %>% 
+  left_join(y = AwayTeam, by = "away_team") -> HomeAndAway
+
+```
+
+
+
+>After creating the variable earlier to know who won, we want to create a variable that says H(if home win), D(if draw) and A(if away win) so it will be easier to do the visualizations
+
+```{r}
+#With this variable, if the home team won, the number will be positive, if is 0 it means its a draw, and if it is negative the away team won.
+HomeAndAway$GoalsDifference <- HomeAndAway$home_score - HomeAndAway$away_score
+
+#Creating a different data set for home win, draw and away win.
+HomeAndAway %>% 
+  filter(GoalsDifference >0) -> HomeWin
+
+HomeAndAway %>% 
+  filter(GoalsDifference ==0) -> Draw
+
+HomeAndAway %>% 
+  filter(GoalsDifference <0) -> AwayWin
+
+#Creating a new variable called result where it would reflect what was the score of the match
+mutate(HomeWin, result = "H") ->HomeWin
+
+mutate(AwayWin, result = "A") ->AwayWin
+
+mutate(Draw, result = "D") ->Draw
+
+#Putting together all the results with the diffent outcomes
+bind_rows(HomeWin, AwayWin, Draw)->Results
+
+#Reordering the results so they are ordered by date.
+ResultsOrder <- order(Results$date)
+WorldCup <- Results[ResultsOrder,]
+
+```
+
+
+
+>Quick comparison of games played at the world cup between American and European teams
+
+
+```{r}
+#Checking the outcome when american teams play european at home at the world cup
+WorldCup %>% 
+  filter(region == "Americas") %>% 
+  filter(region2 == "Europe") -> AmericaHome
+
+
+ggplot(AmericaHome, aes(x = result))+ geom_bar(aes(fill= result))
+
+#Checking the outcome when european teams play american teams at home at the world cup
+WorldCup %>% 
+  filter(region == "Europe") %>% 
+  filter(region2 == "Americas") -> EuropeHome
+
+
+ggplot(EuropeHome, aes(x = result))+ geom_bar(aes(fill= result))
+
+```
+
+
